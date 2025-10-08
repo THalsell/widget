@@ -51,32 +51,8 @@ export default function DemoPage() {
           </h2>
           <p className="text-gray-600 mb-6">
             Your donation helps us continue our important work. Every contribution
-            makes a difference.
+            makes a difference. Click the donate button in the bottom-right corner to get started.
           </p>
-
-          {/* Inline Button Example */}
-          <div className="flex gap-4">
-            <DonationButton
-              siteId="test-site"
-              organizationName="Test Organization"
-              causes={causes}
-              buttonText="Donate Now"
-              position="inline"
-              onSuccess={handleSuccess}
-              onError={handleError}
-            />
-
-            <DonationButton
-              siteId="charity-demo"
-              organizationName="Demo Charity"
-              causes={causes.slice(0, 2)}
-              buttonText="Quick Donate"
-              position="inline"
-              buttonClassName="px-6 py-3 rounded-lg font-medium text-white bg-green-600 hover:bg-green-700 transition-all shadow-lg hover:shadow-xl"
-              onSuccess={handleSuccess}
-              onError={handleError}
-            />
-          </div>
         </div>
 
         {/* Features Grid */}
@@ -155,50 +131,6 @@ export default function DemoPage() {
           </div>
         </div>
 
-        {/* Configuration Examples */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Widget Configurations
-          </h2>
-          <p className="text-gray-600 mb-6">
-            The donation widget can be configured for different sites and use cases:
-          </p>
-
-          <div className="space-y-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Test Site</h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Default configuration with standard amounts and all features enabled.
-              </p>
-              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
-                siteId="test-site"
-              </code>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">Charity Demo</h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Custom amounts with $10 default for charity-focused organizations.
-              </p>
-              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
-                siteId="charity-demo"
-              </code>
-            </div>
-
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Nonprofit Organization
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">
-                Fixed amounts only (no custom amounts) with $50 default.
-              </p>
-              <code className="text-xs bg-gray-100 p-2 rounded block overflow-x-auto">
-                siteId="nonprofit-org"
-              </code>
-            </div>
-          </div>
-        </div>
-
         {/* API Endpoints */}
         <div className="mt-8 bg-white rounded-xl shadow-lg p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
@@ -210,14 +142,14 @@ export default function DemoPage() {
               <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-mono rounded">
                 GET
               </span>
-              <code className="text-sm">/api/config?siteId=test-site</code>
+              <code className="text-sm">/api/config?siteId=demo-site</code>
             </div>
 
             <div className="flex items-center gap-3">
               <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-mono rounded">
                 GET
               </span>
-              <code className="text-sm">/api/donation-options?siteId=test-site</code>
+              <code className="text-sm">/api/donation-options</code>
             </div>
 
             <div className="flex items-center gap-3">
@@ -251,12 +183,12 @@ export default function DemoPage() {
         </div>
       </div>
 
-      {/* Fixed Bottom-Right Button Example */}
+      {/* Fixed Bottom-Right Button */}
       <DonationButton
-        siteId="test-site"
-        organizationName="Test Organization"
+        siteId="demo-site"
+        organizationName="Demo Organization"
         causes={causes}
-        buttonText="💝 Donate"
+        buttonText="Donate"
         position="bottom-right"
         onSuccess={handleSuccess}
         onError={handleError}
