@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Repository Configuration
+- Branch protection enabled on `main` branch
+- Default branch: `develop`
+- All features developed in isolated branches
+- Pull Requests required for production merges
+
 ## Getting Started
 
 First, run the development server:

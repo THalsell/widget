@@ -29,4 +29,19 @@ export const WIDGET_DEFAULTS = {
   THEME: 'light',
   POSITION: 'bottom-right',
   BUTTON_TEXT: 'Donate',
+  CURRENCY: (process.env.DEFAULT_CURRENCY || 'usd') as string,
+  ORGANIZATION_ID: (process.env.ORGANIZATION_ID || 'donation-widget-default') as string,
 } as const;
+
+// Cause name mappings (centralized)
+// TODO: Replace with database lookup in production
+export const CAUSE_NAMES: Record<string, string> = {
+  'general': 'General Fund',
+  'education': 'Education Programs',
+  'emergency': 'Emergency Relief',
+  'water': 'Clean Water',
+  'food': 'Food Security',
+  'healthcare': 'Healthcare',
+  'operations': 'Operations',
+  'programs': 'Programs',
+};

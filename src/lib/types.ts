@@ -37,6 +37,36 @@ export interface DonationCause {
   description?: string;
 }
 
+export interface FrequencyOption {
+  id: string;
+  label: string;
+  description?: string;
+  default?: boolean;
+}
+
+export interface DonationLimits {
+  minAmount: number;
+  maxAmount: number;
+  minCustomAmount: number;
+  maxCustomAmount: number;
+}
+
+export interface FeeOptions {
+  allowCoverageFee: boolean;
+  feePercentage: number;
+  feeFixed: number;
+  description?: string;
+}
+
+export interface DonationOptions {
+  amounts: PresetAmount[];
+  frequencies: FrequencyOption[];
+  limits: DonationLimits;
+  fees: FeeOptions;
+  currency: 'usd' | 'eur' | 'gbp';
+  customAmountEnabled: boolean;
+}
+
 export interface DonationFormData {
   amount: number; // In cents
   isRecurring: boolean;
