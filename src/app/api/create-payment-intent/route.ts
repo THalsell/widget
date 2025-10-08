@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import type { CreatePaymentIntentResponse, ApiResponse } from '@/lib/types';
-import { calculateFees, isValidEmail } from '@/lib/utils';
-import { DONATION_LIMITS, STRIPE_CONFIG } from '@/lib/constants';
+import { calculateFees, isValidEmail, getCauseName } from '@/lib/utils';
+import { DONATION_LIMITS, STRIPE_CONFIG, WIDGET_DEFAULTS } from '@/lib/constants';
 
 /**
  * POST /api/create-payment-intent
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     try {
       paymentIntent = await stripe.paymentIntents.create({
         amount: finalAmount,
-        currency: 'usd',
+        currency: WIDGET_DEFAULTS.CURRENCY,
         customer: customer.id,
         receipt_email: email,
         metadata: {
@@ -172,6 +172,7 @@ export async function POST(request: NextRequest) {
           originalAmount: String(amount),
           feeAmount: String(feeAmount),
           source: 'donation_widget',
+          organizationId: WIDGET_DEFAULTS.ORGANIZATION_ID,
         },
         statement_descriptor_suffix: 'DONATION',
         automatic_payment_methods: {
@@ -251,25 +252,4 @@ function getCorsHeaders(): HeadersInit {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Cache-Control': 'no-cache',
   };
-}
-
-/**
- * Get human-readable cause name
- * TODO: Replace with actual database/config lookup
- * @param causeId - Cause identifier
- */
-function getCauseName(causeId: string): string {
-  // Static mapping for now
-  const causeNames: Record<string, string> = {
-    'general': 'General Fund',
-    'education': 'Education Programs',
-    'emergency': 'Emergency Relief',
-    'water': 'Clean Water',
-    'food': 'Food Security',
-    'healthcare': 'Healthcare',
-    'operations': 'Operations',
-    'programs': 'Programs',
-  };
-
-  return causeNames[causeId] || 'General Donation';
 }

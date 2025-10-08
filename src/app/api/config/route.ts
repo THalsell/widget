@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { DonationConfig, ApiResponse } from '@/lib/types';
-import { DONATION_AMOUNTS, STRIPE_CONFIG, DONATION_LIMITS } from '@/lib/constants';
+import { DONATION_AMOUNTS, STRIPE_CONFIG, DONATION_LIMITS, WIDGET_DEFAULTS } from '@/lib/constants';
 
 /**
  * GET /api/config
@@ -144,7 +144,7 @@ function getConfigForSite(siteId: string): DonationConfig | null {
     feeFixed: STRIPE_CONFIG.FEE_FIXED,
     minAmount: DONATION_LIMITS.MIN_AMOUNT,
     maxAmount: DONATION_LIMITS.MAX_AMOUNT,
-    currency: 'usd' as const,
+    currency: WIDGET_DEFAULTS.CURRENCY as 'usd' | 'eur' | 'gbp',
   };
 
   // Example configurations for different sites

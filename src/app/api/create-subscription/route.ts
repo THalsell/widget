@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import type { CreateSubscriptionResponse, ApiResponse, SubscriptionRequest } from '@/lib/types';
-import { calculateFees, isValidEmail } from '@/lib/utils';
-import { DONATION_LIMITS, STRIPE_CONFIG } from '@/lib/constants';
+import { calculateFees, isValidEmail, getCauseName } from '@/lib/utils';
+import { DONATION_LIMITS, STRIPE_CONFIG, WIDGET_DEFAULTS } from '@/lib/constants';
 
 /**
  * POST /api/create-subscription
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
           name: metadata?.donorName,
           metadata: {
             source: 'donation_widget',
-            organizationId: 'widget-001',
+            organizationId: WIDGET_DEFAULTS.ORGANIZATION_ID,
             ...metadata,
           },
         });
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
       price = await stripe.prices.create({
         product: product.id,
         unit_amount: finalAmount,
-        currency: 'usd',
+        currency: WIDGET_DEFAULTS.CURRENCY,
         recurring: {
           interval: frequency === 'monthly' ? 'month' : 'year',
         },
@@ -395,25 +395,4 @@ function getCorsHeaders(): HeadersInit {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Cache-Control': 'no-cache',
   };
-}
-
-/**
- * Get human-readable cause name
- * TODO: Replace with actual database/config lookup
- * @param causeId - Cause identifier
- */
-function getCauseName(causeId: string): string {
-  // Static mapping for now
-  const causeNames: Record<string, string> = {
-    'general': 'General Fund',
-    'education': 'Education Programs',
-    'emergency': 'Emergency Relief',
-    'water': 'Clean Water',
-    'food': 'Food Security',
-    'healthcare': 'Healthcare',
-    'operations': 'Operations',
-    'programs': 'Programs',
-  };
-
-  return causeNames[causeId] || 'General Donation';
 }
