@@ -266,6 +266,8 @@ export async function POST(request: NextRequest) {
           causeName: getCauseName(causeId),
           subscriptionType: 'recurring_donation',
           frequency,
+          originalAmount: String(amount),
+          feesCovered: String(coverFees),
         },
       });
     } catch (error) {
@@ -339,6 +341,19 @@ export async function POST(request: NextRequest) {
         status: 500,
         headers: getCorsHeaders(),
       });
+    }
+
+    // Update setup intent with subscription ID for verification later
+    try {
+      await stripe.setupIntents.update(setupIntent.id, {
+        metadata: {
+          ...setupIntent.metadata,
+          subscriptionId: subscription.id,
+        },
+      });
+    } catch (error) {
+      console.error('Error updating setup intent metadata:', error);
+      // Non-critical error, continue
     }
 
     const clientSecret = setupIntent.client_secret ?? '';
