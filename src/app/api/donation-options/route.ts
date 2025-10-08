@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Build donation options response
+    // Build donation options response (same for all sites)
     const donationOptions: DonationOptions = {
       amounts: DONATION_AMOUNTS.map((amount) => ({
         value: amount.value,
@@ -73,15 +73,6 @@ export async function GET(request: NextRequest) {
       currency: currency as 'usd' | 'eur' | 'gbp',
       customAmountEnabled: true,
     };
-
-    // If siteId is provided, add site-specific options
-    if (siteId) {
-      const siteOptions = getSiteSpecificOptions(siteId);
-      if (siteOptions) {
-        // Merge site-specific options
-        Object.assign(donationOptions, siteOptions);
-      }
-    }
 
     // Return successful response
     const successResponse: ApiResponse<DonationOptions> = {
@@ -140,48 +131,4 @@ function getCorsHeaders(): HeadersInit {
 function isValidCurrency(currency: string): boolean {
   const validCurrencies = ['usd', 'eur', 'gbp'];
   return validCurrencies.includes(currency.toLowerCase());
-}
-
-/**
- * Get site-specific donation options
- * TODO: Replace with database lookup in production
- * @param siteId - Site identifier
- */
-function getSiteSpecificOptions(siteId: string): Partial<DonationOptions> | null {
-  // Site-specific configurations
-  // In production, this would query a database
-
-  const siteConfigs: Record<string, Partial<DonationOptions>> = {
-    'test-site': {
-      // Use default amounts, but allow higher maximum for test site
-      limits: {
-        minAmount: DONATION_LIMITS.MIN_AMOUNT,
-        maxAmount: 100000000, // $1,000,000 for testing
-        minCustomAmount: DONATION_LIMITS.MIN_AMOUNT,
-        maxCustomAmount: 100000000,
-      },
-    },
-    'charity-demo': {
-      // Suggest different default amounts for this site
-      amounts: [
-        { value: 500, label: '$5', default: false },
-        { value: 1000, label: '$10', default: true }, // $10 default for this site
-        { value: 2500, label: '$25', default: false },
-        { value: 5000, label: '$50', default: false },
-        { value: 10000, label: '$100', default: false },
-      ],
-    },
-    'nonprofit-org': {
-      // Disable custom amounts for this site
-      customAmountEnabled: false,
-      amounts: [
-        { value: 1000, label: '$10', default: false },
-        { value: 2000, label: '$20', default: false },
-        { value: 5000, label: '$50', default: true }, // $50 default
-        { value: 10000, label: '$100', default: false },
-      ],
-    },
-  };
-
-  return siteConfigs[siteId] || null;
 }

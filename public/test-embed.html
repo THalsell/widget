@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Embed Test - External Website Simulation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 18px;
+    }
+
+    .section {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      color: #333;
+      margin-bottom: 15px;
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .donate-button {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .code-block {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 5px;
+      padding: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      margin: 15px 0;
+    }
+
+    .inline-widget-container {
+      min-height: 600px;
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .feature-list li:last-child {
+      border-bottom: none;
+    }
+
+    .feature-list li:before {
+      content: '✓';
+      color: #10b981;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .status {
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .status.success {
+      background: #d1fae5;
+      border: 1px solid #10b981;
+      color: #065f46;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      border: 1px solid #ef4444;
+      color: #991b1b;
+    }
+
+    .console {
+      background: #1e293b;
+      color: #94a3b8;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 15px;
+    }
+
+    .console-log {
+      margin: 5px 0;
+      padding: 3px 0;
+      border-bottom: 1px solid #334155;
+    }
+
+    .console-log:last-child {
+      border-bottom: none;
+    }
+
+    .timestamp {
+      color: #64748b;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🧪 Widget Embed Test Page</h1>
+      <p class="subtitle">Simulating an external website using the donation widget</p>
+    </div>
+
+    <!-- Modal Mode Demo -->
+    <div class="section">
+      <h2>📱 Modal Mode (Recommended)</h2>
+      <p>Click the button below to open the donation widget in a modal overlay.</p>
+
+      <div class="button-group">
+        <button id="donate-modal-button" class="donate-button">
+          💝 Donate Now (Modal)
+        </button>
+        <button onclick="DonationWidget.close()">
+          Close Modal (API)
+        </button>
+      </div>
+
+      <div class="code-block">
+&lt;!-- Modal Mode Implementation --&gt;
+&lt;button id="donate-modal-button"&gt;Donate Now&lt;/button&gt;
+
+&lt;script src="/widget-loader.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  DonationWidget.init({
+    siteId: 'demo-site',
+    trigger: '#donate-modal-button',
+    mode: 'modal',
+    onSuccess: function(data) {
+      console.log('Donation successful!', data);
+    }
+  });
+&lt;/script&gt;
+      </div>
+    </div>
+
+    <!-- Inline Mode Demo -->
+    <div class="section">
+      <h2>🖼️ Inline Mode</h2>
+      <p>The widget is embedded directly into the page content.</p>
+
+      <div id="inline-widget-container" class="inline-widget-container">
+        <!-- Widget will be inserted here -->
+      </div>
+
+      <div class="code-block">
+&lt;!-- Inline Mode Implementation --&gt;
+&lt;div id="inline-widget-container"&gt;&lt;/div&gt;
+
+&lt;script src="/widget-loader.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  DonationWidget.init({
+    siteId: 'demo-site',
+    targetElement: '#inline-widget-container',
+    mode: 'inline'
+  });
+&lt;/script&gt;
+      </div>
+
+      <div class="button-group">
+        <button onclick="initInlineWidget()">
+          Load Inline Widget
+        </button>
+        <button onclick="destroyInlineWidget()">
+          Destroy Inline Widget
+        </button>
+      </div>
+    </div>
+
+    <!-- Features -->
+    <div class="section">
+      <h2>✨ Features</h2>
+      <ul class="feature-list">
+        <li>iframe-based isolation (styles won't conflict with host page)</li>
+        <li>postMessage communication between host and widget</li>
+        <li>Modal and inline display modes</li>
+        <li>Customizable theme and branding</li>
+        <li>Event callbacks (onSuccess, onError, onClose)</li>
+        <li>Responsive design (works on mobile and desktop)</li>
+        <li>Keyboard shortcuts (ESC to close modal)</li>
+      </ul>
+    </div>
+
+    <!-- Status Messages -->
+    <div class="section">
+      <h2>📊 Widget Events</h2>
+      <div id="status"></div>
+      <div id="console" class="console">
+        <div class="console-log"><span class="timestamp">[Init]</span> Console ready. Widget events will appear here.</div>
+      </div>
+    </div>
+
+    <!-- Configuration Options -->
+    <div class="section">
+      <h2>⚙️ Configuration Options</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: #f8f9fa;">
+            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Option</th>
+            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Type</th>
+            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #dee2e6;">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><code>siteId</code></td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">string</td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">Required. Your unique site identifier</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><code>mode</code></td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">'modal' | 'inline'</td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">Display mode. Default: 'modal'</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><code>trigger</code></td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">string</td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">CSS selector for trigger element (modal mode)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><code>targetElement</code></td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">string</td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">CSS selector for container (inline mode)</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;"><code>theme</code></td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">'light' | 'dark'</td>
+            <td style="padding: 10px; border-bottom: 1px solid #dee2e6;">Color theme. Default: 'light'</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px;"><code>onSuccess</code></td>
+            <td style="padding: 10px;">function</td>
+            <td style="padding: 10px;">Callback when donation succeeds</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Load the widget loader script -->
+  <script src="/widget-loader.js"></script>
+
+  <script>
+    // Helper to log messages to console
+    function logToConsole(message, type = 'info') {
+      const consoleEl = document.getElementById('console');
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = document.createElement('div');
+      logEntry.className = 'console-log';
+      logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+      consoleEl.appendChild(logEntry);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    // Show status message
+    function showStatus(message, type = 'success') {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = 'status ' + type;
+      statusEl.style.display = 'block';
+
+      setTimeout(() => {
+        statusEl.style.display = 'none';
+      }, 5000);
+    }
+
+    // Initialize modal widget
+    logToConsole('Initializing modal widget...');
+    DonationWidget.init({
+      siteId: 'demo-site',
+      organizationName: 'Demo Organization',
+      trigger: '#donate-modal-button',
+      mode: 'modal',
+      theme: 'light',
+      onSuccess: function(data) {
+        logToConsole('✅ Donation successful! Amount: $' + (data.amount / 100), 'success');
+        showStatus('Donation successful! Thank you for your support.', 'success');
+        console.log('Donation data:', data);
+      },
+      onError: function(error) {
+        logToConsole('❌ Donation error: ' + error, 'error');
+        showStatus('Donation failed: ' + error, 'error');
+        console.error('Donation error:', error);
+      },
+      onClose: function() {
+        logToConsole('Modal closed by user');
+      }
+    });
+    logToConsole('Modal widget initialized successfully');
+
+    // Inline widget instance
+    let inlineWidgetInstance = null;
+
+    // Initialize inline widget
+    function initInlineWidget() {
+      if (inlineWidgetInstance) {
+        logToConsole('⚠️ Inline widget already loaded');
+        return;
+      }
+
+      logToConsole('Loading inline widget...');
+
+      // Note: This creates a second instance of DonationWidget
+      // In a real scenario, you'd want to manage multiple instances
+      const script = document.createElement('script');
+      script.src = '/widget-loader.js';
+      script.onload = function() {
+        window.DonationWidgetInline = window.DonationWidget;
+        window.DonationWidgetInline.init({
+          siteId: 'demo-site',
+          organizationName: 'Demo Organization',
+          targetElement: '#inline-widget-container',
+          mode: 'inline',
+          theme: 'light',
+          onSuccess: function(data) {
+            logToConsole('✅ Inline donation successful!', 'success');
+            showStatus('Inline donation successful!', 'success');
+          }
+        });
+        inlineWidgetInstance = window.DonationWidgetInline;
+        logToConsole('Inline widget loaded successfully');
+      };
+      document.body.appendChild(script);
+    }
+
+    // Destroy inline widget
+    function destroyInlineWidget() {
+      if (!inlineWidgetInstance) {
+        logToConsole('⚠️ No inline widget to destroy');
+        return;
+      }
+
+      inlineWidgetInstance.destroy();
+      inlineWidgetInstance = null;
+      document.getElementById('inline-widget-container').innerHTML = '';
+      logToConsole('Inline widget destroyed');
+    }
+
+    // Log widget API availability
+    logToConsole('DonationWidget API available. Version: ' + DonationWidget.version);
+  </script>
+</body>
+</html>
