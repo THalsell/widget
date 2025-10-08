@@ -111,3 +111,13 @@ export function debounce<T extends (...args: any[]) => any>(
 export function cn(...classes: (string | boolean | undefined)[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+/**
+ * Get human-readable cause name from cause ID
+ * @param causeId - Cause identifier
+ */
+export function getCauseName(causeId: string): string {
+  // Import here to avoid circular dependency
+  const { CAUSE_NAMES } = require('./constants');
+  return CAUSE_NAMES[causeId] || 'General Donation';
+}
