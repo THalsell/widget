@@ -1,0 +1,113 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Donor information
+model Donor {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  donations     Donation[]
+  subscriptions Subscription[]
+
+  @@map("donors")
+}
+
+// Individual donations (one-time or part of subscription)
+model Donation {
+  id       String @id @default(uuid())
+  donorId  String
+  donor    Donor  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  // Stripe identifiers
+  stripePaymentIntentId String? @unique
+  stripeSubscriptionId  String?
+
+  // Donation details
+  amount        Int    // Amount in cents
+  currency      String @default("usd")
+  frequency     String // 'once' | 'monthly' | 'yearly'
+
+  causeId       String?
+  causeName     String?
+
+  feesCovered   Boolean @default(false)
+  feeAmount     Int     @default(0) // Fee amount in cents
+
+  status        String  // 'pending' | 'succeeded' | 'failed' | 'refunded'
+
+  // Additional data
+  metadata      Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([donorId])
+  @@index([stripePaymentIntentId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("donations")
+}
+
+// Recurring subscriptions
+model Subscription {
+  id       String @id @default(uuid())
+  donorId  String
+  donor    Donor  @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  // Stripe identifier
+  stripeSubscriptionId String @unique
+
+  // Subscription details
+  amount    Int    // Amount in cents per billing cycle
+  currency  String @default("usd")
+  frequency String // 'monthly' | 'yearly'
+
+  causeId   String?
+  causeName String?
+
+  status    String // 'active' | 'canceled' | 'past_due' | 'incomplete'
+
+  // Billing period
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  canceledAt DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([donorId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// Webhook event tracking for idempotency
+model WebhookEvent {
+  id              String   @id @default(uuid())
+  stripeEventId   String   @unique
+  type            String   // Event type (e.g., 'payment_intent.succeeded')
+  processed       Boolean  @default(false)
+  processedAt     DateTime?
+
+  createdAt       DateTime @default(now())
+
+  @@index([stripeEventId])
+  @@index([processed])
+  @@map("webhook_events")
+}
