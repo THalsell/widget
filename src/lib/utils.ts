@@ -1,6 +1,7 @@
 // src/lib/utils.ts
 
 import { FeeCalculation } from './types';
+import { CAUSE_NAMES } from './constants';
 
 /**
  * Format cents to display currency
@@ -39,10 +40,6 @@ export function calculateFees(
   feePercentage: number = 2.9,
   feeFixed: number = 30
 ): FeeCalculation {
-  // Calculate what the fee would be
-  const percentageFee = Math.round(amountInCents * (feePercentage / 100));
-  const totalFee = percentageFee + feeFixed;
-
   // Calculate the total amount if user covers fees
   // We need to calculate this so that after Stripe takes their fee,
   // the organization receives the full intended donation
@@ -90,7 +87,7 @@ export function generateWidgetId(): string {
 /**
  * Debounce function for input handlers
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -117,7 +114,5 @@ export function cn(...classes: (string | boolean | undefined)[]): string {
  * @param causeId - Cause identifier
  */
 export function getCauseName(causeId: string): string {
-  // Import here to avoid circular dependency
-  const { CAUSE_NAMES } = require('./constants');
   return CAUSE_NAMES[causeId] || 'General Donation';
 }

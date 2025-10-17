@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       const errorResponse: ApiResponse = {
         success: false,
         error: {
@@ -182,14 +182,27 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Error creating payment intent:', error);
 
-      // Handle specific Stripe errors
-      const stripeError = error as any;
+      // Handle specific Stripe errors safely without using `any`
+      let stripeErrorMessage = 'Failed to create payment intent';
+      let stripeErrorType: string | undefined = undefined;
+
+      if (error instanceof Error) {
+        stripeErrorMessage = error.message || stripeErrorMessage;
+        // Some Stripe errors include a 'type' property; attempt to read it safely
+        const maybeTyped = error as unknown as { type?: string };
+        stripeErrorType = maybeTyped.type;
+      } else if (typeof error === 'object' && error !== null) {
+        const errObj = error as { message?: unknown; type?: unknown };
+        if (typeof errObj.message === 'string') stripeErrorMessage = errObj.message;
+        if (typeof errObj.type === 'string') stripeErrorType = errObj.type;
+      }
+
       const errorResponse: ApiResponse = {
         success: false,
         error: {
           code: 'PAYMENT_INTENT_ERROR',
-          message: stripeError.message || 'Failed to create payment intent',
-          details: stripeError.type,
+          message: stripeErrorMessage,
+          details: stripeErrorType,
         },
       };
 

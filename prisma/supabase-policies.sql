@@ -36,3 +36,29 @@ CREATE POLICY "Enable all access for service role" ON webhook_events
   TO authenticated
   USING (true)
   WITH CHECK (true);
+
+-- Widget configs table
+ALTER TABLE widget_configs ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access (so widgets can fetch their config)
+CREATE POLICY "Enable read access for all users" ON widget_configs
+  FOR SELECT
+  TO anon, authenticated
+  USING ("isActive" = true);
+
+-- Allow full access for authenticated users (API routes with service role)
+CREATE POLICY "Enable all access for service role" ON widget_configs
+  FOR ALL
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- Prisma migrations table (internal use only)
+ALTER TABLE _prisma_migrations ENABLE ROW LEVEL SECURITY;
+
+-- Restrict all access to service role only (Prisma CLI uses this)
+CREATE POLICY "Service role only access" ON _prisma_migrations
+  FOR ALL
+  TO authenticated
+  USING (true)
+  WITH CHECK (true);

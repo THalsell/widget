@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
               feesCovered: paymentIntent.metadata?.feesCovered === 'true',
               feeAmount: parseInt(paymentIntent.metadata?.feeAmount || '0'),
               status: 'succeeded',
-              metadata: paymentIntent.metadata as any,
+              metadata: paymentIntent.metadata as Stripe.Metadata,
             },
           });
 
@@ -162,18 +162,19 @@ export async function POST(request: NextRequest) {
       // ========== Invoice Events ==========
       case 'invoice.payment_succeeded': {
         const invoice = event.data.object as Stripe.Invoice;
+        const invoiceSubscriptionId = (invoice as unknown as { subscription: string | Stripe.Subscription | null }).subscription;
         console.log('✅ Invoice paid:', {
           id: invoice.id,
-          subscription: invoice.subscription,
+          subscription: invoiceSubscriptionId,
           amount: invoice.amount_paid,
           customer: invoice.customer,
           metadata: invoice.metadata,
         });
 
         // This fires for every recurring subscription payment
-        if (invoice.subscription) {
+        if (invoiceSubscriptionId) {
           // Get subscription details
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          const subscription = await stripe.subscriptions.retrieve(invoiceSubscriptionId as string);
           const customer = await stripe.customers.retrieve(invoice.customer as string) as Stripe.Customer;
 
           if (customer.email) {
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
                 feesCovered: subscription.metadata?.feesCovered === 'true',
                 feeAmount: parseInt(subscription.metadata?.feeAmount || '0'),
                 status: 'succeeded',
-                metadata: { invoiceId: invoice.id, ...subscription.metadata } as any,
+                metadata: { invoiceId: invoice.id, ...subscription.metadata } as Stripe.Metadata,
               },
             });
 
@@ -216,9 +217,10 @@ export async function POST(request: NextRequest) {
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
+        const invoiceSubscriptionId = (invoice as unknown as { subscription: string | Stripe.Subscription | null }).subscription;
         console.log('❌ Invoice payment failed:', {
           id: invoice.id,
-          subscription: invoice.subscription,
+          subscription: invoiceSubscriptionId,
           amount: invoice.amount_due,
           customer: invoice.customer,
           attemptCount: invoice.attempt_count,
@@ -261,6 +263,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Create subscription record
+          const subWithPeriods = subscription as unknown as { current_period_start: number; current_period_end: number };
           await prisma.subscription.upsert({
             where: { stripeSubscriptionId: subscription.id },
             create: {
@@ -272,13 +275,13 @@ export async function POST(request: NextRequest) {
               causeId: subscription.metadata?.causeId || null,
               causeName: subscription.metadata?.causeName || null,
               status: subscription.status,
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date(subWithPeriods.current_period_start * 1000),
+              currentPeriodEnd: new Date(subWithPeriods.current_period_end * 1000),
             },
             update: {
               status: subscription.status,
-              currentPeriodStart: new Date(subscription.current_period_start * 1000),
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+              currentPeriodStart: new Date(subWithPeriods.current_period_start * 1000),
+              currentPeriodEnd: new Date(subWithPeriods.current_period_end * 1000),
             },
           });
 
@@ -289,6 +292,7 @@ export async function POST(request: NextRequest) {
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
+        const subWithPeriods = subscription as unknown as { current_period_start: number; current_period_end: number };
         console.log('🔄 Subscription updated:', {
           id: subscription.id,
           customer: subscription.customer,
@@ -302,8 +306,8 @@ export async function POST(request: NextRequest) {
           where: { stripeSubscriptionId: subscription.id },
           data: {
             status: subscription.status,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            currentPeriodStart: new Date(subWithPeriods.current_period_start * 1000),
+            currentPeriodEnd: new Date(subWithPeriods.current_period_end * 1000),
           },
         });
 

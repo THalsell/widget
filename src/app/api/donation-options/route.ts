@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
   try {
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
-    const siteId = searchParams.get('siteId');
     const currency = searchParams.get('currency') || WIDGET_DEFAULTS.CURRENCY;
 
     // Validate currency if provided

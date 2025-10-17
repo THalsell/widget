@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch (error) {
+      console.error('Error parsing JSON in /api/verify-setup:', error);
       const errorResponse: ApiResponse = {
         success: false,
         error: {
@@ -91,7 +92,9 @@ export async function POST(request: NextRequest) {
         customerEmail: subscription?.customer
           ? typeof subscription.customer === 'string'
             ? undefined
-            : subscription.customer.email
+            : 'email' in subscription.customer && subscription.customer.email
+            ? subscription.customer.email
+            : undefined
           : undefined,
         metadata: setupIntent.metadata,
         created: setupIntent.created,

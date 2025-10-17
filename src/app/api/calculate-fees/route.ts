@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (error) {
+    } catch {
       const errorResponse: ApiResponse = {
         success: false,
         error: {

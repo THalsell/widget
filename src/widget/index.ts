@@ -1,10 +1,14 @@
 // Entry point for the embeddable widget
 
+interface DonationWidgetConfig {
+  [key: string]: unknown;
+}
+
 class DonationWidget {
   private container: HTMLElement | null = null;
-  private config: any;
+  private config: DonationWidgetConfig;
 
-  constructor(config: any) {
+  constructor(config: DonationWidgetConfig = {}) {
     this.config = config;
   }
 
@@ -27,6 +31,12 @@ class DonationWidget {
 }
 
 // Expose widget to global scope
-(window as any).DonationWidget = DonationWidget;
+declare global {
+  interface Window {
+    DonationWidget?: typeof DonationWidget;
+  }
+}
+
+window.DonationWidget = DonationWidget;
 
 export default DonationWidget;

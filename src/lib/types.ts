@@ -144,7 +144,7 @@ export type DonationStep =
   | 'error';
 
 // ============= API Response Types =============
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: ApiError;
@@ -153,13 +153,13 @@ export interface ApiResponse<T = any> {
 export interface ApiError {
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;
 }
 
 // ============= Event Types for Widget Communication =============
 export interface WidgetEvent {
   type: WidgetEventType;
-  payload?: any;
+  payload?: unknown;
 }
 
 export type WidgetEventType =
@@ -176,7 +176,7 @@ export interface StripeWebhookEvent {
   object: string;
   type: string;
   data: {
-    object: any;
+    object: unknown;
   };
 }
 
