@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { DonationConfig, ApiResponse } from '@/lib/types';
 import { DONATION_AMOUNTS, STRIPE_CONFIG, DONATION_LIMITS, WIDGET_DEFAULTS } from '@/lib/constants';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/config
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get configuration for the site
-    const config = getConfigForSite(siteId);
+    const config = await getConfigForSite(siteId);
 
     if (!config) {
       const errorResponse: ApiResponse = {
@@ -123,20 +124,59 @@ function isValidSiteId(siteId: string): boolean {
 
 /**
  * Get configuration for a specific site
- * TODO: Replace with database lookup in production
+ * Reads from database, falls back to defaults if not found
  * TODO: Add API key authentication
  * TODO: Add rate limiting
  * @param siteId - Site identifier
  */
-function getConfigForSite(siteId: string): DonationConfig | null {
-  // Static configurations for different sites
-  // In production, this would query a database
+async function getConfigForSite(siteId: string): Promise<DonationConfig | null> {
+  try {
+    // Try to get config from database
+    const widgetConfig = await prisma.widgetConfig.findFirst({
+      where: {
+        siteId,
+        isActive: true,
+      },
+    });
 
-  const baseConfig = {
+    if (!widgetConfig) {
+      // Return default config if not found in database
+      return getDefaultConfig(siteId);
+    }
+
+    // Transform database config to API format
+    return {
+      siteId: widgetConfig.siteId,
+      organizationName: widgetConfig.organizationName,
+      amounts: widgetConfig.amounts as any,
+      allowRecurring: widgetConfig.allowRecurring,
+      allowCoverageFee: widgetConfig.allowCoverageFee,
+      feePercentage: widgetConfig.feePercentage,
+      feeFixed: widgetConfig.feeFixed,
+      minAmount: widgetConfig.minAmount,
+      maxAmount: widgetConfig.maxAmount,
+      currency: widgetConfig.currency as 'usd' | 'eur' | 'gbp',
+      causes: widgetConfig.causes as any,
+      theme: widgetConfig.theme as any,
+    };
+  } catch (error) {
+    console.error('Error fetching widget config from database:', error);
+    return null;
+  }
+}
+
+/**
+ * Get default configuration (used when no database config exists)
+ * @param siteId - Site identifier
+ */
+function getDefaultConfig(siteId: string): DonationConfig {
+  return {
+    siteId,
+    organizationName: 'Default Organization',
     amounts: DONATION_AMOUNTS.map((amount) => ({
       value: amount.value,
       label: amount.label,
-      default: amount.value === 2000, // $20 default
+      default: amount.value === 2000,
     })),
     allowRecurring: true,
     allowCoverageFee: true,
@@ -145,55 +185,13 @@ function getConfigForSite(siteId: string): DonationConfig | null {
     minAmount: DONATION_LIMITS.MIN_AMOUNT,
     maxAmount: DONATION_LIMITS.MAX_AMOUNT,
     currency: WIDGET_DEFAULTS.CURRENCY as 'usd' | 'eur' | 'gbp',
-  };
-
-  // Example configurations for different sites
-  const configs: Record<string, DonationConfig> = {
-    'test-site': {
-      siteId: 'test-site',
-      organizationName: 'Test Organization',
-      ...baseConfig,
-      causes: [
-        { id: 'general', name: 'General Fund', description: 'Support our general operations' },
-        { id: 'education', name: 'Education Programs', description: 'Fund educational initiatives' },
-        { id: 'emergency', name: 'Emergency Relief', description: 'Provide emergency assistance' },
-      ],
-      theme: {
-        mode: 'light',
-        primaryColor: '#0070f3',
-        borderRadius: 'md',
-      },
-    },
-    'charity-demo': {
-      siteId: 'charity-demo',
-      organizationName: 'Demo Charity',
-      ...baseConfig,
-      causes: [
-        { id: 'water', name: 'Clean Water', description: 'Provide clean water access' },
-        { id: 'food', name: 'Food Security', description: 'Fight hunger and malnutrition' },
-        { id: 'healthcare', name: 'Healthcare', description: 'Medical care for communities' },
-      ],
-      theme: {
-        mode: 'light',
-        primaryColor: '#10b981',
-        borderRadius: 'lg',
-      },
-    },
-    'nonprofit-org': {
-      siteId: 'nonprofit-org',
-      organizationName: 'Nonprofit Organization',
-      ...baseConfig,
-      causes: [
-        { id: 'operations', name: 'Operations', description: 'Day-to-day operations' },
-        { id: 'programs', name: 'Programs', description: 'Community programs' },
-      ],
-      theme: {
-        mode: 'dark',
-        primaryColor: '#8b5cf6',
-        borderRadius: 'sm',
-      },
+    causes: [
+      { id: 'general', name: 'General Fund', description: 'Support our general operations' },
+    ],
+    theme: {
+      mode: 'light',
+      primaryColor: '#0070f3',
+      borderRadius: 'md',
     },
   };
-
-  return configs[siteId] || null;
 }

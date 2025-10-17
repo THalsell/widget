@@ -111,3 +111,43 @@ model WebhookEvent {
   @@index([processed])
   @@map("webhook_events")
 }
+
+// Widget configuration for customization
+model WidgetConfig {
+  id                String   @id @default(uuid())
+  siteId            String   @unique // Unique identifier for the widget
+  organizationName  String
+
+  // Donation amounts configuration
+  amounts           Json     // Array of {value, label, default}
+
+  // Feature flags
+  allowRecurring    Boolean  @default(true)
+  allowCoverageFee  Boolean  @default(true)
+
+  // Stripe fee configuration
+  feePercentage     Float    @default(2.9)
+  feeFixed          Int      @default(30) // in cents
+
+  // Donation limits
+  minAmount         Int      @default(100)  // in cents
+  maxAmount         Int      @default(99999900) // in cents
+
+  // Currency
+  currency          String   @default("usd")
+
+  // Causes/campaigns
+  causes            Json?    // Array of {id, name, description}
+
+  // Theme customization
+  theme             Json?    // {mode, primaryColor, borderRadius}
+
+  // Metadata
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([siteId])
+  @@index([isActive])
+  @@map("widget_configs")
+}
