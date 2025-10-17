@@ -8,6 +8,7 @@ import PaymentForm from './PaymentForm';
 import type {
   DonationOptions,
   DonationCause,
+  DonationConfig,
   ApiResponse,
   CreatePaymentIntentResponse,
   CreateSubscriptionResponse,
@@ -37,6 +38,7 @@ export default function DonationModal({
   onError,
 }: DonationModalProps) {
   const [step, setStep] = useState<DonationStep>('amount');
+  const [widgetConfig, setWidgetConfig] = useState<DonationConfig | null>(null);
   const [donationOptions, setDonationOptions] = useState<DonationOptions | null>(null);
   const [selectedAmount, setSelectedAmount] = useState<number>(0);
   const [selectedFrequency, setSelectedFrequency] = useState<string>('once');
@@ -57,35 +59,77 @@ export default function DonationModal({
     }
   }, []);
 
-  // Fetch donation options on mount
+  // Fetch widget config on mount
   useEffect(() => {
-    if (isOpen && !donationOptions) {
-      fetchDonationOptions();
+    if (isOpen && !widgetConfig) {
+      fetchWidgetConfig();
     }
   }, [isOpen]);
 
-  // Set initial cause if provided
+  // Set initial cause from config or props
   useEffect(() => {
-    if (causes && causes.length > 0 && !selectedCause) {
-      setSelectedCause(causes[0]);
+    const availableCauses = causes || widgetConfig?.causes;
+    if (availableCauses && availableCauses.length > 0 && !selectedCause) {
+      setSelectedCause(availableCauses[0]);
     }
-  }, [causes]);
+  }, [causes, widgetConfig]);
 
-  const fetchDonationOptions = async () => {
+  const fetchWidgetConfig = async () => {
     try {
       const response = await fetch(
-        `/api/donation-options?siteId=${encodeURIComponent(siteId)}`
+        `/api/config?siteId=${encodeURIComponent(siteId)}`
       );
-      const data: ApiResponse<DonationOptions> = await response.json();
+      const data: ApiResponse<DonationConfig> = await response.json();
 
       if (data.success && data.data) {
-        setDonationOptions(data.data);
+        setWidgetConfig(data.data);
+
+        // Convert config to donation options format
+        setDonationOptions({
+          amounts: data.data.amounts,
+          frequencies: [
+            {
+              id: 'once',
+              label: 'One-time',
+              description: 'Make a single donation',
+              default: true,
+            },
+            ...(data.data.allowRecurring ? [
+              {
+                id: 'monthly',
+                label: 'Monthly',
+                description: 'Recurring monthly donation',
+                default: false,
+              },
+              {
+                id: 'yearly',
+                label: 'Yearly',
+                description: 'Recurring yearly donation',
+                default: false,
+              },
+            ] : []),
+          ],
+          limits: {
+            minAmount: data.data.minAmount,
+            maxAmount: data.data.maxAmount,
+            minCustomAmount: data.data.minAmount,
+            maxCustomAmount: data.data.maxAmount,
+          },
+          fees: {
+            allowCoverageFee: data.data.allowCoverageFee,
+            feePercentage: data.data.feePercentage,
+            feeFixed: data.data.feeFixed,
+            description: `Help cover the ${data.data.feePercentage}% + $${data.data.feeFixed / 100} processing fee`,
+          },
+          currency: data.data.currency,
+          customAmountEnabled: true,
+        });
       } else {
-        setError(data.error?.message || 'Failed to load donation options');
+        setError(data.error?.message || 'Failed to load widget configuration');
       }
     } catch (err) {
-      setError('Failed to load donation options');
-      console.error('Error fetching donation options:', err);
+      setError('Failed to load widget configuration');
+      console.error('Error fetching widget config:', err);
     }
   };
 
@@ -181,10 +225,15 @@ export default function DonationModal({
     }
     setError('');
 
-    if (causes && causes.length > 1) {
+    const useCauses = (causes || widgetConfig?.causes) && (causes || widgetConfig?.causes)!.length > 1;
+    const allowFees = widgetConfig?.allowCoverageFee ?? donationOptions?.fees.allowCoverageFee ?? true;
+
+    if (useCauses) {
       setStep('cause');
-    } else {
+    } else if (allowFees) {
       setStep('fees');
+    } else {
+      setStep('email');
     }
   };
 
@@ -194,7 +243,13 @@ export default function DonationModal({
       return;
     }
     setError('');
-    setStep('fees');
+
+    const allowFees = widgetConfig?.allowCoverageFee ?? donationOptions?.fees.allowCoverageFee ?? true;
+    if (allowFees) {
+      setStep('fees');
+    } else {
+      setStep('email');
+    }
   };
 
   const handleFeesNext = () => {
@@ -251,13 +306,29 @@ export default function DonationModal({
 
   const feeAmount = feeCalculation?.feeAmount || 0;
 
+  // Get theme settings from config
+  const primaryColor = widgetConfig?.theme?.primaryColor || '#0070f3';
+  const borderRadius = widgetConfig?.theme?.borderRadius || 'md';
+  const displayName = widgetConfig?.organizationName || organizationName;
+  const availableCauses = causes || widgetConfig?.causes;
+
+  // Border radius mapping
+  const borderRadiusClasses = {
+    none: 'rounded-none',
+    sm: 'rounded-sm',
+    md: 'rounded-lg',
+    lg: 'rounded-xl',
+  };
+  const radiusClass = borderRadiusClasses[borderRadius as keyof typeof borderRadiusClasses] || 'rounded-lg';
+
   return (
     <div className="donation-modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="donation-modal-content bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className={`donation-modal-content bg-white ${radiusClass} shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto`}
+           style={{ '--primary-color': primaryColor } as React.CSSProperties}>
         {/* Header */}
-        <div className="modal-header sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-xl">
+        <div className={`modal-header sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center ${radiusClass}`}>
           <h2 className="text-2xl font-bold text-gray-900">
-            {step === 'success' ? 'Thank You!' : `Donate to ${organizationName}`}
+            {step === 'success' ? 'Thank You!' : `Donate to ${displayName}`}
           </h2>
           <button
             onClick={handleClose}
@@ -303,15 +374,10 @@ export default function DonationModal({
               <button
                 onClick={handleAmountNext}
                 disabled={selectedAmount <= 0}
-                className={`
-                  mt-6 w-full px-6 py-3 rounded-lg font-medium text-white
-                  transition-all
-                  ${
-                    selectedAmount <= 0
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                  }
-                `}
+                className={`mt-6 w-full px-6 py-3 ${radiusClass} font-medium text-white transition-all ${
+                  selectedAmount <= 0 ? 'bg-gray-400 cursor-not-allowed' : ''
+                }`}
+                style={selectedAmount > 0 ? { backgroundColor: primaryColor } : {}}
               >
                 Continue
               </button>
@@ -319,24 +385,25 @@ export default function DonationModal({
           )}
 
           {/* Cause Step */}
-          {step === 'cause' && causes && (
+          {step === 'cause' && availableCauses && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Select a Cause
               </h3>
               <div className="space-y-3">
-                {causes.map((cause) => (
+                {availableCauses.map((cause) => (
                   <button
                     key={cause.id}
                     onClick={() => setSelectedCause(cause)}
-                    className={`
-                      w-full text-left p-4 rounded-lg border-2 transition-all
-                      ${
-                        selectedCause?.id === cause.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }
-                    `}
+                    className={`w-full text-left p-4 ${radiusClass} border-2 transition-all ${
+                      selectedCause?.id === cause.id
+                        ? 'bg-opacity-10'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    style={selectedCause?.id === cause.id ? {
+                      borderColor: primaryColor,
+                      backgroundColor: `${primaryColor}15`
+                    } : {}}
                   >
                     <div className="font-medium text-gray-900">{cause.name}</div>
                     {cause.description && (
@@ -361,7 +428,8 @@ export default function DonationModal({
                 </button>
                 <button
                   onClick={handleCauseNext}
-                  className="flex-1 px-6 py-3 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className={`flex-1 px-6 py-3 ${radiusClass} font-medium text-white`}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   Continue
                 </button>
@@ -378,10 +446,13 @@ export default function DonationModal({
 
               <div className="space-y-4">
                 <div
-                  className={`
-                    p-4 rounded-lg border-2 cursor-pointer transition-all
-                    ${coverFees ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}
-                  `}
+                  className={`p-4 ${radiusClass} border-2 cursor-pointer transition-all ${
+                    !coverFees ? 'border-gray-300' : ''
+                  }`}
+                  style={coverFees ? {
+                    borderColor: primaryColor,
+                    backgroundColor: `${primaryColor}15`
+                  } : {}}
                   onClick={() => setCoverFees(true)}
                 >
                   <div className="flex items-start">
@@ -404,10 +475,13 @@ export default function DonationModal({
                 </div>
 
                 <div
-                  className={`
-                    p-4 rounded-lg border-2 cursor-pointer transition-all
-                    ${!coverFees ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}
-                  `}
+                  className={`p-4 ${radiusClass} border-2 cursor-pointer transition-all ${
+                    coverFees ? 'border-gray-300' : ''
+                  }`}
+                  style={!coverFees ? {
+                    borderColor: primaryColor,
+                    backgroundColor: `${primaryColor}15`
+                  } : {}}
                   onClick={() => setCoverFees(false)}
                 >
                   <div className="flex items-start">
@@ -438,7 +512,8 @@ export default function DonationModal({
                 </button>
                 <button
                   onClick={handleFeesNext}
-                  className="flex-1 px-6 py-3 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  className={`flex-1 px-6 py-3 ${radiusClass} font-medium text-white`}
+                  style={{ backgroundColor: primaryColor }}
                 >
                   Continue
                 </button>
@@ -481,7 +556,8 @@ export default function DonationModal({
                 <button
                   onClick={handleEmailNext}
                   disabled={isLoading}
-                  className="flex-1 px-6 py-3 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+                  className={`flex-1 px-6 py-3 ${radiusClass} font-medium text-white ${isLoading ? 'bg-gray-400' : ''}`}
+                  style={!isLoading ? { backgroundColor: primaryColor } : {}}
                 >
                   {isLoading ? 'Loading...' : 'Continue to Payment'}
                 </button>
@@ -552,7 +628,8 @@ export default function DonationModal({
 
               <button
                 onClick={handleClose}
-                className="px-8 py-3 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700"
+                className={`px-8 py-3 ${radiusClass} font-medium text-white`}
+                style={{ backgroundColor: primaryColor }}
               >
                 Close
               </button>
