@@ -23,7 +23,7 @@ export default function DemoPage() {
     },
   ];
 
-  const handleSuccess = (data: any) => {
+  const handleSuccess = (data: unknown) => {
     console.log('Donation successful!', data);
   };
 

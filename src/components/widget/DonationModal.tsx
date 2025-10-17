@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe, type Stripe as StripeType } from '@stripe/stripe-js';
 import AmountSelector from './AmountSelector';
@@ -22,7 +22,12 @@ interface DonationModalProps {
   siteId: string;
   organizationName?: string;
   causes?: DonationCause[];
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: {
+    intentId: string;
+    amount: number;
+    cause?: DonationCause | null;
+    frequency: string;
+  }) => void;
   onError?: (error: string) => void;
 }
 
@@ -51,30 +56,8 @@ export default function DonationModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  // Initialize Stripe
-  useEffect(() => {
-    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-    if (publishableKey) {
-      setStripePromise(loadStripe(publishableKey));
-    }
-  }, []);
-
-  // Fetch widget config on mount
-  useEffect(() => {
-    if (isOpen && !widgetConfig) {
-      fetchWidgetConfig();
-    }
-  }, [isOpen]);
-
-  // Set initial cause from config or props
-  useEffect(() => {
-    const availableCauses = causes || widgetConfig?.causes;
-    if (availableCauses && availableCauses.length > 0 && !selectedCause) {
-      setSelectedCause(availableCauses[0]);
-    }
-  }, [causes, widgetConfig]);
-
-  const fetchWidgetConfig = async () => {
+  // Define callback functions before useEffect hooks
+  const fetchWidgetConfig = useCallback(async () => {
     try {
       const response = await fetch(
         `/api/config?siteId=${encodeURIComponent(siteId)}`
@@ -131,9 +114,9 @@ export default function DonationModal({
       setError('Failed to load widget configuration');
       console.error('Error fetching widget config:', err);
     }
-  };
+  }, [siteId]);
 
-  const calculateFees = async () => {
+  const calculateFees = useCallback(async () => {
     if (!coverFees) {
       setFeeCalculation(null);
       return;
@@ -154,13 +137,37 @@ export default function DonationModal({
     } catch (err) {
       console.error('Error calculating fees:', err);
     }
-  };
+  }, [coverFees, selectedAmount]);
 
+  // Initialize Stripe
+  useEffect(() => {
+    const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+    if (publishableKey) {
+      setStripePromise(loadStripe(publishableKey));
+    }
+  }, []);
+
+  // Fetch widget config on mount
+  useEffect(() => {
+    if (isOpen && !widgetConfig) {
+      fetchWidgetConfig();
+    }
+  }, [isOpen, widgetConfig, fetchWidgetConfig]);
+
+  // Set initial cause from config or props
+  useEffect(() => {
+    const availableCauses = causes || widgetConfig?.causes;
+    if (availableCauses && availableCauses.length > 0 && !selectedCause) {
+      setSelectedCause(availableCauses[0]);
+    }
+  }, [causes, widgetConfig, selectedCause]);
+
+  // Calculate fees when amount or coverFees changes
   useEffect(() => {
     if (selectedAmount > 0 && coverFees) {
       calculateFees();
     }
-  }, [selectedAmount, coverFees]);
+  }, [selectedAmount, coverFees, calculateFees]);
 
   const createPaymentIntent = async () => {
     setIsLoading(true);
@@ -529,7 +536,7 @@ export default function DonationModal({
               </h3>
 
               <p className="text-sm text-gray-600 mb-4">
-                We'll send your donation receipt to this email address.
+                We&apos;ll send your donation receipt to this email address.
               </p>
 
               <input
@@ -623,7 +630,7 @@ export default function DonationModal({
               <p className="text-gray-600 mb-6">
                 Your generous donation of {formatCurrency(finalAmount, donationOptions?.currency || 'USD')}
                 {selectedFrequency !== 'once' && ` / ${selectedFrequency}`} has been received.
-                We've sent a confirmation email to {email}.
+                We&apos;ve sent a confirmation email to {email}.
               </p>
 
               <button

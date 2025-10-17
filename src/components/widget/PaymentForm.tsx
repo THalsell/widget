@@ -20,7 +20,7 @@ export default function PaymentForm({
   amount,
   currency = 'USD',
   feeAmount = 0,
-  causeId,
+  causeId: _causeId, // eslint-disable-line @typescript-eslint/no-unused-vars
   causeName,
   isRecurring,
   frequency,
@@ -54,7 +54,7 @@ export default function PaymentForm({
       }
 
       // Confirm payment or setup
-      let result;
+      let result: unknown;
       if (isRecurring) {
         // For subscriptions, confirm setup intent
         result = await stripe.confirmSetup({
@@ -75,17 +75,25 @@ export default function PaymentForm({
         });
       }
 
-      if (result.error) {
-        setErrorMessage(result.error.message || 'Payment failed');
-        onError(result.error.message || 'Payment failed');
-        setIsProcessing(false);
-        return;
+      if (result && typeof result === 'object' && 'error' in result) {
+        const err = (result as { error?: { message?: string } }).error;
+        if (err) {
+          setErrorMessage(err.message || 'Payment failed');
+          onError(err.message || 'Payment failed');
+          setIsProcessing(false);
+          return;
+        }
       }
 
       // Payment succeeded
-      const intentId = isRecurring
-        ? (result as any).setupIntent?.id
-        : (result as any).paymentIntent?.id;
+      let intentId: string | undefined;
+      if (result && typeof result === 'object') {
+        if ('setupIntent' in result) {
+          intentId = (result as { setupIntent?: { id?: string } }).setupIntent?.id;
+        } else if ('paymentIntent' in result) {
+          intentId = (result as { paymentIntent?: { id?: string } }).paymentIntent?.id;
+        }
+      }
 
       if (intentId) {
         onSuccess(intentId);

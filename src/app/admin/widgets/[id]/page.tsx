@@ -1,15 +1,44 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import WidgetPreview from '@/components/admin/WidgetPreview';
 import CausesEditor from '@/components/admin/CausesEditor';
 
-export default function NewWidgetConfigPage() {
+interface WidgetConfig {
+  id: string;
+  siteId: string;
+  organizationName: string;
+  currency: string;
+  allowRecurring: boolean;
+  allowCoverageFee: boolean;
+  feePercentage: number;
+  feeFixed: number;
+  minAmount: number;
+  maxAmount: number;
+  isActive: boolean;
+  amounts: Array<{ value: number; label: string; default: boolean }>;
+  causes: Array<{ id: string; name: string; description: string }>;
+  theme: {
+    mode: string;
+    primaryColor: string;
+    borderRadius: string;
+  };
+}
+
+export default function EditWidgetConfigPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const params = useParams();
+  const id = params?.id as string;
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<WidgetConfig | null>(null);
+  const [causes, setCauses] = useState<Array<{ id: string; name: string; description: string }>>([
+    { id: 'general', name: 'General Fund', description: 'Support our general operations' },
+  ]);
 
   const [formData, setFormData] = useState({
     siteId: '',
@@ -24,19 +53,68 @@ export default function NewWidgetConfigPage() {
     isActive: true,
     primaryColor: '#0070f3',
     borderRadius: 'md',
-    causes: [
-      { id: 'general', name: 'General Fund', description: 'Support our general operations' },
-    ],
   });
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function fetchConfig() {
+      try {
+        const response = await fetch(`/api/admin/widget-configs/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch widget configuration');
+        }
+        const data = await response.json();
+        const cfg = data.config;
+
+        if (cancelled) return;
+
+        setConfig(cfg);
+        setCauses(cfg.causes || [
+          { id: 'general', name: 'General Fund', description: 'Support our general operations' },
+        ]);
+        setFormData({
+          siteId: cfg.siteId,
+          organizationName: cfg.organizationName,
+          currency: cfg.currency,
+          allowRecurring: cfg.allowRecurring,
+          allowCoverageFee: cfg.allowCoverageFee,
+          feePercentage: cfg.feePercentage,
+          feeFixed: cfg.feeFixed,
+          minAmount: cfg.minAmount,
+          maxAmount: cfg.maxAmount,
+          isActive: cfg.isActive,
+          primaryColor: cfg.theme?.primaryColor || '#0070f3',
+          borderRadius: cfg.theme?.borderRadius || 'md',
+        });
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchConfig();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/admin/widget-configs', {
-        method: 'POST',
+      const response = await fetch(`/api/admin/widget-configs/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           siteId: formData.siteId,
@@ -49,7 +127,7 @@ export default function NewWidgetConfigPage() {
           minAmount: formData.minAmount,
           maxAmount: formData.maxAmount,
           isActive: formData.isActive,
-          amounts: [
+          amounts: config?.amounts || [
             { value: 500, label: '$5', default: false },
             { value: 1000, label: '$10', default: false },
             { value: 1500, label: '$15', default: false },
@@ -57,7 +135,7 @@ export default function NewWidgetConfigPage() {
             { value: 2500, label: '$25', default: false },
             { value: 3000, label: '$30', default: false },
           ],
-          causes: formData.causes,
+          causes: causes,
           theme: {
             mode: 'light',
             primaryColor: formData.primaryColor,
@@ -68,15 +146,43 @@ export default function NewWidgetConfigPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to create widget configuration');
+        throw new Error(data.error || 'Failed to update widget configuration');
       }
 
       router.push('/admin/widgets');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading configuration...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !config) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <h2 className="text-red-800 text-xl font-semibold mb-2">Error</h2>
+          <p className="text-red-600">{error}</p>
+          <Link
+            href="/admin/widgets"
+            className="mt-4 inline-block text-blue-600 hover:text-blue-700"
+          >
+            ← Back to Widgets
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -91,10 +197,10 @@ export default function NewWidgetConfigPage() {
             ← Back to Widgets
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">
-            Create Widget Configuration
+            Edit Widget Configuration
           </h1>
           <p className="text-gray-600 mt-2">
-            Set up a new customizable donation widget and see a live preview
+            Update your donation widget settings and see a live preview
           </p>
         </div>
 
@@ -277,8 +383,8 @@ export default function NewWidgetConfigPage() {
                 Donation Causes
               </h2>
               <CausesEditor
-                causes={formData.causes}
-                onChange={(causes) => setFormData({ ...formData, causes })}
+                causes={causes}
+                onChange={(updatedCauses) => setCauses(updatedCauses)}
               />
             </div>
           </div>
@@ -293,10 +399,10 @@ export default function NewWidgetConfigPage() {
             </Link>
             <button
               type="submit"
-              disabled={loading}
+              disabled={saving}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : 'Create Widget'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>
@@ -309,7 +415,7 @@ export default function NewWidgetConfigPage() {
             borderRadius={formData.borderRadius}
             allowRecurring={formData.allowRecurring}
             allowCoverageFee={formData.allowCoverageFee}
-            causes={formData.causes}
+            causes={causes}
           />
         </div>
       </div>

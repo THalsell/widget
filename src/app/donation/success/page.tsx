@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/utils';
@@ -19,18 +19,16 @@ interface PaymentDetails {
   created?: number;
 }
 
-export default function DonationSuccessPage() {
+function DonationSuccessContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
 
   // Get intent IDs from URL params
-  const paymentIntentId = searchParams.get('payment_intent');
-  const paymentIntentClientSecret = searchParams.get('payment_intent_client_secret');
-  const setupIntentId = searchParams.get('setup_intent');
-  const setupIntentClientSecret = searchParams.get('setup_intent_client_secret');
-  const redirectStatus = searchParams.get('redirect_status');
+    const paymentIntentId = searchParams.get('payment_intent');
+    const setupIntentId = searchParams.get('setup_intent');
+    const redirectStatus = searchParams.get('redirect_status');
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -377,5 +375,22 @@ export default function DonationSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DonationSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <DonationSuccessContent />
+    </Suspense>
   );
 }

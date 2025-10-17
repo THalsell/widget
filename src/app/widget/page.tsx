@@ -51,33 +51,40 @@ function WidgetContent() {
 
   // Fetch causes from config endpoint if not provided
   useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch(
+          `/api/config?siteId=${encodeURIComponent(config.siteId)}`
+        );
+        const data = await response.json();
+
+        if (data.success && data.data) {
+          setCauses(data.data.causes || []);
+          if (data.data.organizationName) {
+            setConfig((prev) => ({
+              ...prev,
+              organizationName: data.data.organizationName,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching widget config:', error);
+      }
+    };
+
     if (causes.length === 0) {
       fetchConfig();
     }
-  }, [config.siteId]);
+  }, [config.siteId, causes.length]);
 
-  const fetchConfig = async () => {
-    try {
-      const response = await fetch(
-        `/api/config?siteId=${encodeURIComponent(config.siteId)}`
-      );
-      const data = await response.json();
-
-      if (data.success && data.data) {
-        setCauses(data.data.causes || []);
-        if (data.data.organizationName) {
-          setConfig((prev) => ({
-            ...prev,
-            organizationName: data.data.organizationName,
-          }));
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching widget config:', error);
-    }
+  type DonationResult = {
+    intentId: string;
+    amount: number;
+    cause?: DonationCause | null;
+    frequency: string;
   };
 
-  const handleSuccess = (data: any) => {
+  const handleSuccess = (data: DonationResult) => {
     // Notify parent window of successful donation
     window.parent.postMessage(
       {

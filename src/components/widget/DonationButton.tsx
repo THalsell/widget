@@ -11,7 +11,7 @@ interface DonationButtonProps {
   buttonText?: string;
   buttonClassName?: string;
   position?: 'bottom-right' | 'bottom-left' | 'inline';
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: unknown) => void;
   onError?: (error: string) => void;
 }
 
@@ -35,7 +35,7 @@ export default function DonationButton({
     setIsModalOpen(false);
   };
 
-  const handleSuccess = (data: any) => {
+  const handleSuccess = (data: unknown) => {
     if (onSuccess) {
       onSuccess(data);
     }

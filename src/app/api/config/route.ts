@@ -129,40 +129,81 @@ function isValidSiteId(siteId: string): boolean {
  * TODO: Add rate limiting
  * @param siteId - Site identifier
  */
+type DBWidgetConfig = {
+  siteId: string;
+  organizationName?: string;
+  amounts?: DonationConfig['amounts'];
+  allowRecurring?: boolean;
+  allowCoverageFee?: boolean;
+  feePercentage?: number;
+  feeFixed?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  currency?: 'usd' | 'eur' | 'gbp' | string;
+  causes?: DonationConfig['causes'];
+  theme?: {
+    mode?: 'light' | 'dark';
+    primaryColor?: string;
+    borderRadius?: string;
+  } | null;
+  isActive?: boolean;
+};
+
 async function getConfigForSite(siteId: string): Promise<DonationConfig | null> {
   try {
     // Try to get config from database
-    const widgetConfig = await prisma.widgetConfig.findFirst({
+    const widgetConfig = (await prisma.widgetConfig.findFirst({
       where: {
         siteId,
         isActive: true,
       },
-    });
+    })) as DBWidgetConfig | null;
 
     if (!widgetConfig) {
       // Return default config if not found in database
       return getDefaultConfig(siteId);
     }
 
+    // Validate theme shape at runtime and only include it if valid
+    const validatedTheme = isValidWidgetTheme(widgetConfig.theme)
+      ? (widgetConfig.theme as DonationConfig['theme'])
+      : undefined;
+
     // Transform database config to API format
     return {
       siteId: widgetConfig.siteId,
-      organizationName: widgetConfig.organizationName,
-      amounts: widgetConfig.amounts as any,
-      allowRecurring: widgetConfig.allowRecurring,
-      allowCoverageFee: widgetConfig.allowCoverageFee,
-      feePercentage: widgetConfig.feePercentage,
-      feeFixed: widgetConfig.feeFixed,
-      minAmount: widgetConfig.minAmount,
-      maxAmount: widgetConfig.maxAmount,
-      currency: widgetConfig.currency as 'usd' | 'eur' | 'gbp',
-      causes: widgetConfig.causes as any,
-      theme: widgetConfig.theme as any,
+      organizationName: widgetConfig.organizationName ?? getDefaultConfig(siteId).organizationName,
+      amounts: widgetConfig.amounts ?? getDefaultConfig(siteId).amounts,
+      allowRecurring: typeof widgetConfig.allowRecurring === 'boolean' ? widgetConfig.allowRecurring : true,
+      allowCoverageFee: typeof widgetConfig.allowCoverageFee === 'boolean' ? widgetConfig.allowCoverageFee : true,
+      feePercentage: widgetConfig.feePercentage ?? STRIPE_CONFIG.FEE_PERCENTAGE,
+      feeFixed: widgetConfig.feeFixed ?? STRIPE_CONFIG.FEE_FIXED,
+      minAmount: widgetConfig.minAmount ?? DONATION_LIMITS.MIN_AMOUNT,
+      maxAmount: widgetConfig.maxAmount ?? DONATION_LIMITS.MAX_AMOUNT,
+      currency: (widgetConfig.currency as 'usd' | 'eur' | 'gbp') ?? (WIDGET_DEFAULTS.CURRENCY as 'usd' | 'eur' | 'gbp'),
+      causes: widgetConfig.causes ?? getDefaultConfig(siteId).causes,
+      theme: validatedTheme,
     };
   } catch (error) {
     console.error('Error fetching widget config from database:', error);
     return null;
   }
+}
+
+/**
+ * Runtime type guard for widget theme coming from the database.
+ * Ensures the shape matches what the API expects (mode, primaryColor, borderRadius).
+ */
+function isValidWidgetTheme(obj: unknown): obj is DonationConfig['theme'] {
+  if (!obj || typeof obj !== 'object') return false;
+
+  const record = obj as Record<string, unknown>;
+  const mode = record.mode;
+  const primaryColor = record.primaryColor;
+  const borderRadius = record.borderRadius;
+
+  const validMode = mode === 'light' || mode === 'dark';
+  return validMode && typeof primaryColor === 'string' && typeof borderRadius === 'string';
 }
 
 /**
