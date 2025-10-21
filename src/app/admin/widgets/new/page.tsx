@@ -51,12 +51,18 @@ export default function NewWidgetConfigPage() {
           .single();
 
         if (userOrg && userOrg.organization) {
-          const org = userOrg.organization as { id: string; name: string };
-          setOrganizationId(org.id);
-          setFormData(prev => ({
-            ...prev,
-            organizationName: org.name,
-          }));
+          // Supabase types nested relationships as arrays
+          const org = Array.isArray(userOrg.organization)
+            ? userOrg.organization[0]
+            : userOrg.organization;
+
+          if (org) {
+            setOrganizationId(org.id);
+            setFormData(prev => ({
+              ...prev,
+              organizationName: org.name,
+            }));
+          }
         }
       } catch (err) {
         console.error('Error fetching organization:', err);
