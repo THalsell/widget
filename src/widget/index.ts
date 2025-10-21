@@ -1,12 +1,20 @@
 // Entry point for the embeddable widget
 
+interface DonationSuccessData {
+  amount: number;
+  currency: string;
+  donorName?: string;
+  donorEmail?: string;
+  transactionId: string;
+}
+
 interface WidgetConfig {
   siteId: string;
   trigger?: string | HTMLElement;
   mode?: 'modal' | 'inline';
   theme?: 'light' | 'dark';
   widgetUrl?: string; // Custom widget URL (defaults to window.location.origin in production)
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: DonationSuccessData) => void;
   onError?: (error: string) => void;
   onClose?: () => void;
 }
