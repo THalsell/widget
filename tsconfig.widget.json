@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "noEmit": false,
+    "declaration": false,
+    "outDir": "./public",
+    "moduleResolution": "node"
+  },
+  "include": ["src/widget/**/*"],
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.spec.ts"]
+}
