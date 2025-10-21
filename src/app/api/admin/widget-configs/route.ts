@@ -1,19 +1,51 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 /**
  * GET /api/admin/widget-configs
- * Returns all widget configurations
+ * Returns widget configurations for the authenticated user's organization
  */
 export async function GET() {
   try {
-    const configs = await prisma.widgetConfig.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    // Get authenticated user
+    const supabaseAuth = await createServerClient();
+    const { data: { user } } = await supabaseAuth.auth.getUser();
 
-    return NextResponse.json({ configs });
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Use service role for database queries
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Get user's organization
+    const { data: userOrg } = await supabase
+      .from('user_organizations')
+      .select('organizationId')
+      .eq('userId', user.id)
+      .single();
+
+    if (!userOrg) {
+      return NextResponse.json({ configs: [] });
+    }
+
+    // Get widgets for this organization only
+    const { data: configs, error } = await supabase
+      .from('widget_configs')
+      .select('*')
+      .eq('organizationId', userOrg.organizationId)
+      .order('createdAt', { ascending: false });
+
+    if (error) throw error;
+
+    return NextResponse.json({ configs: configs || [] });
   } catch (error) {
     console.error('Error fetching widget configs:', error);
     return NextResponse.json(
@@ -39,10 +71,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // Check if siteId already exists
-    const existing = await prisma.widgetConfig.findUnique({
-      where: { siteId: body.siteId },
-    });
+    const { data: existing } = await supabase
+      .from('widget_configs')
+      .select('siteId')
+      .eq('siteId', body.siteId)
+      .single();
 
     if (existing) {
       return NextResponse.json(
@@ -51,10 +90,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Generate UUID for the new config
+    const { data: uuidData } = await supabase.rpc('gen_random_uuid');
+    const newId = uuidData || crypto.randomUUID();
+
     // Create new config
-    const config = await prisma.widgetConfig.create({
-      data: {
+    const now = new Date().toISOString();
+    const { data: config, error } = await supabase
+      .from('widget_configs')
+      .insert({
+        id: newId, // Explicitly set the ID
         siteId: body.siteId,
+        organizationId: body.organizationId, // Must be provided
         organizationName: body.organizationName,
         amounts: body.amounts || [],
         allowRecurring: body.allowRecurring ?? true,
@@ -67,8 +114,13 @@ export async function POST(request: Request) {
         causes: body.causes || null,
         theme: body.theme || null,
         isActive: body.isActive ?? true,
-      },
-    });
+        createdAt: now,
+        updatedAt: now,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     return NextResponse.json({ config }, { status: 201 });
   } catch (error) {

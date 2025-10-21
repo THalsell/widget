@@ -87,6 +87,7 @@ export interface PaymentIntentRequest {
   causeId: string;
   coverFees: boolean;
   email: string;
+  siteId: string;
   metadata?: Record<string, string>;
 }
 
@@ -96,6 +97,7 @@ export interface SubscriptionRequest {
   frequency: 'monthly' | 'yearly';
   coverFees: boolean;
   email: string;
+  siteId: string;
   metadata?: Record<string, string>;
 }
 

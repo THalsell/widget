@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { prisma } from '@/lib/prisma';
 import type { CreatePaymentIntentResponse, ApiResponse } from '@/lib/types';
 import { calculateFees, isValidEmail, getCauseName } from '@/lib/utils';
 import { DONATION_LIMITS, STRIPE_CONFIG, WIDGET_DEFAULTS } from '@/lib/constants';
@@ -33,15 +34,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const { amount, causeId, coverFees, email } = body;
+    const { amount, causeId, coverFees, email, siteId } = body;
 
     // Validate required fields
-    if (!amount || !causeId || coverFees === undefined || !email) {
+    if (!amount || !causeId || coverFees === undefined || !email || !siteId) {
       const errorResponse: ApiResponse = {
         success: false,
         error: {
           code: 'MISSING_REQUIRED_FIELDS',
-          message: 'amount, causeId, coverFees, and email are required',
+          message: 'amount, causeId, coverFees, email, and siteId are required',
         },
       };
       return NextResponse.json(errorResponse, {
@@ -110,6 +111,60 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Fetch widget config to get connected account info
+    let widgetConfig;
+    try {
+      widgetConfig = await prisma.widgetConfig.findUnique({
+        where: { siteId },
+      });
+    } catch (error) {
+      console.error('Error fetching widget config:', error);
+      const errorResponse: ApiResponse = {
+        success: false,
+        error: {
+          code: 'CONFIG_ERROR',
+          message: 'Failed to fetch widget configuration',
+        },
+      };
+      return NextResponse.json(errorResponse, {
+        status: 500,
+        headers: getCorsHeaders(),
+      });
+    }
+
+    if (!widgetConfig) {
+      const errorResponse: ApiResponse = {
+        success: false,
+        error: {
+          code: 'CONFIG_NOT_FOUND',
+          message: 'Widget configuration not found for this siteId',
+        },
+      };
+      return NextResponse.json(errorResponse, {
+        status: 404,
+        headers: getCorsHeaders(),
+      });
+    }
+
+    if (!widgetConfig.isActive) {
+      const errorResponse: ApiResponse = {
+        success: false,
+        error: {
+          code: 'WIDGET_INACTIVE',
+          message: 'This widget is currently inactive',
+        },
+      };
+      return NextResponse.json(errorResponse, {
+        status: 403,
+        headers: getCorsHeaders(),
+      });
+    }
+
+    // Check if connected account is configured and onboarded
+    const useConnectedAccount = widgetConfig.stripeConnectAccountId && widgetConfig.stripeConnectOnboarded;
+    const connectedAccountId = widgetConfig.stripeConnectAccountId;
+    const platformFeePercentage = widgetConfig.platformFeePercentage;
+
     // Calculate final amount (with fees if needed)
     let finalAmount = amount;
     let feeAmount = 0;
@@ -122,6 +177,11 @@ export async function POST(request: NextRequest) {
       finalAmount = feeCalculation.totalAmount;
       feeAmount = feeCalculation.feeAmount;
     }
+
+    // Calculate platform fee if using connected account
+    const platformFee = useConnectedAccount
+      ? Math.round(finalAmount * (platformFeePercentage / 100))
+      : 0;
 
     // Get or create Stripe customer
     let customer;
@@ -160,7 +220,7 @@ export async function POST(request: NextRequest) {
     // TODO: Add idempotency key support for retry safety
     let paymentIntent;
     try {
-      paymentIntent = await stripe.paymentIntents.create({
+      const baseParams = {
         amount: finalAmount,
         currency: WIDGET_DEFAULTS.CURRENCY,
         customer: customer.id,
@@ -171,14 +231,33 @@ export async function POST(request: NextRequest) {
           feesCovered: String(coverFees),
           originalAmount: String(amount),
           feeAmount: String(feeAmount),
+          platformFee: String(platformFee),
+          siteId,
+          organizationName: widgetConfig.organizationName,
           source: 'donation_widget',
-          organizationId: WIDGET_DEFAULTS.ORGANIZATION_ID,
+          useConnectedAccount: String(useConnectedAccount),
         },
         statement_descriptor_suffix: 'DONATION',
         automatic_payment_methods: {
           enabled: true,
         },
-      });
+      };
+
+      // If using connected account, add Stripe Connect parameters
+      const paymentIntentParams = useConnectedAccount && connectedAccountId
+        ? {
+            ...baseParams,
+            application_fee_amount: platformFee,
+            on_behalf_of: connectedAccountId,
+          }
+        : baseParams;
+
+      paymentIntent = await stripe.paymentIntents.create(
+        paymentIntentParams,
+        useConnectedAccount && connectedAccountId
+          ? { stripeAccount: connectedAccountId }
+          : undefined
+      );
     } catch (error) {
       console.error('Error creating payment intent:', error);
 

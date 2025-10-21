@@ -113,10 +113,58 @@ model WebhookEvent {
   @@map("webhook_events")
 }
 
+// User accounts (synced with Supabase Auth)
+model User {
+  id            String   @id // Matches Supabase Auth user ID
+  email         String   @unique
+  name          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  organizations UserOrganization[]
+
+  @@map("users")
+}
+
+// Organizations (multi-tenant support)
+model Organization {
+  id               String   @id @default(uuid())
+  name             String
+  slug             String   @unique // URL-friendly identifier
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  users            UserOrganization[]
+  widgets          WidgetConfig[]
+
+  @@index([slug])
+  @@map("organizations")
+}
+
+// Many-to-many relationship between Users and Organizations
+model UserOrganization {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String
+  role           String   @default("admin") // 'admin' | 'member' | 'viewer'
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("user_organizations")
+}
+
 // Widget configuration for customization
 model WidgetConfig {
   id                String   @id @default(uuid())
   siteId            String   @unique // Unique identifier for the widget
+  organizationId    String   // NEW: Link to organization
   organizationName  String
 
   // Donation amounts configuration
@@ -143,12 +191,22 @@ model WidgetConfig {
   // Theme customization
   theme             Json?    // {mode, primaryColor, borderRadius}
 
+  // Stripe Connect
+  stripeConnectAccountId   String?  // Connected Stripe account ID
+  stripeConnectOnboarded   Boolean  @default(false) // Onboarding complete
+  platformFeePercentage    Float    @default(3.0) // Platform fee %
+
   // Metadata
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  // Relations
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([siteId])
   @@index([isActive])
+  @@index([organizationId])
+  @@index([stripeConnectAccountId])
   @@map("widget_configs")
 }

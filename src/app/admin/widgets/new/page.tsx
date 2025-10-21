@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import WidgetPreview from '@/components/admin/WidgetPreview';
 import CausesEditor from '@/components/admin/CausesEditor';
 
@@ -10,6 +11,7 @@ export default function NewWidgetConfigPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     siteId: '',
@@ -29,10 +31,51 @@ export default function NewWidgetConfigPage() {
     ],
   });
 
+  // Fetch user's organization on mount
+  useEffect(() => {
+    async function fetchOrganization() {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.push('/login');
+          return;
+        }
+
+        // Get user's organization
+        const { data: userOrg } = await supabase
+          .from('user_organizations')
+          .select('organizationId, organization:organizations(id, name)')
+          .eq('userId', user.id)
+          .single();
+
+        if (userOrg && userOrg.organization) {
+          const org = userOrg.organization as { id: string; name: string };
+          setOrganizationId(org.id);
+          setFormData(prev => ({
+            ...prev,
+            organizationName: org.name,
+          }));
+        }
+      } catch (err) {
+        console.error('Error fetching organization:', err);
+      }
+    }
+
+    fetchOrganization();
+  }, [router]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (!organizationId) {
+      setError('Organization not found. Please try refreshing the page.');
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/admin/widget-configs', {
@@ -40,6 +83,7 @@ export default function NewWidgetConfigPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           siteId: formData.siteId,
+          organizationId: organizationId, // Include organization ID
           organizationName: formData.organizationName,
           currency: formData.currency,
           allowRecurring: formData.allowRecurring,
@@ -137,18 +181,18 @@ export default function NewWidgetConfigPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Organization Name *
+                    Organization Name
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.organizationName}
-                    onChange={(e) =>
-                      setFormData({ ...formData, organizationName: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., My Nonprofit Organization"
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                    placeholder="Loading organization..."
                   />
+                  <p className="text-sm text-gray-500 mt-1">
+                    From your organization account
+                  </p>
                 </div>
 
                 <div>

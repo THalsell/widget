@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import AdminNav from '@/components/admin/AdminNav';
 
 interface WidgetConfig {
   id: string;
@@ -81,8 +82,10 @@ export default function WidgetConfigsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <AdminNav />
+      <div className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
@@ -134,7 +137,7 @@ export default function WidgetConfigsPage() {
                 href="/admin/widgets/new"
                 className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                Create Widget Configuration
+                + New Widget
               </Link>
             </div>
           </div>
@@ -194,6 +197,13 @@ export default function WidgetConfigsPage() {
                     <td className="py-4 px-6 text-right">
                       <div className="flex justify-end gap-2">
                         <Link
+                          href={`/demo?siteId=${config.siteId}`}
+                          target="_blank"
+                          className="px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded"
+                        >
+                          Test
+                        </Link>
+                        <Link
                           href={`/admin/widgets/${config.id}`}
                           className="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded"
                         >
@@ -213,6 +223,7 @@ export default function WidgetConfigsPage() {
             </table>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

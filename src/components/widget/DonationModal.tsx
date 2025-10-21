@@ -190,6 +190,7 @@ export default function DonationModal({
               causeId: selectedCause?.id || 'general',
               coverFees,
               email,
+              siteId,
             }
           : {
               amount: finalAmount,
@@ -197,6 +198,7 @@ export default function DonationModal({
               frequency: selectedFrequency as 'monthly' | 'yearly',
               coverFees,
               email,
+              siteId,
             };
 
       const response = await fetch(endpoint, {

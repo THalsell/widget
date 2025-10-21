@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import WidgetPreview from '@/components/admin/WidgetPreview';
 import CausesEditor from '@/components/admin/CausesEditor';
+import StripeConnectCard from '@/components/admin/StripeConnectCard';
 
 interface WidgetConfig {
   id: string;
@@ -408,7 +409,13 @@ export default function EditWidgetConfigPage() {
         </form>
 
         {/* Preview Panel */}
-        <div className="lg:sticky lg:top-8 lg:self-start">
+        <div className="lg:sticky lg:top-8 lg:self-start space-y-6">
+          {/* Stripe Connect Card */}
+          {id && (
+            <StripeConnectCard widgetConfigId={id} />
+          )}
+
+          {/* Widget Preview */}
           <WidgetPreview
             organizationName={formData.organizationName || 'Your Organization'}
             primaryColor={formData.primaryColor}

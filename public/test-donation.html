@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Donation Widget</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .test-cards {
+      background: #fff3e0;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧪 Test Your Donation Widget</h1>
+
+    <div class="info">
+      <h3>📋 Instructions:</h3>
+      <ol>
+        <li>Go to <code>http://localhost:3000/admin/widgets</code></li>
+        <li>Find your widget and copy the <strong>Site ID</strong></li>
+        <li>The donation widget should appear on this page once configured</li>
+      </ol>
+    </div>
+
+    <div class="test-cards">
+      <h3>💳 Stripe Test Cards:</h3>
+      <ul>
+        <li><strong>Success:</strong> <code>4242 4242 4242 4242</code></li>
+        <li><strong>Requires Auth:</strong> <code>4000 0025 0000 3155</code></li>
+        <li><strong>Declined:</strong> <code>4000 0000 0000 0002</code></li>
+      </ul>
+      <p><small>Use any future expiry date, any 3-digit CVC, and any ZIP code</small></p>
+    </div>
+
+    <h2>Widget Integration</h2>
+    <p>To test your widget here, you would need to:</p>
+    <ol>
+      <li>Get your widget's embed code from the admin panel</li>
+      <li>Or use the React component directly</li>
+      <li>Or visit <code>/demo</code> page which has the widget already integrated</li>
+    </ol>
+
+    <h3>Quick Links:</h3>
+    <ul>
+      <li><a href="/admin/widgets">Admin - Widgets Dashboard</a></li>
+      <li><a href="/demo">Demo Page with Widget</a></li>
+      <li><a href="/admin">Admin Dashboard</a></li>
+    </ul>
+  </div>
+
+  <script>
+    console.log('Test page loaded');
+    console.log('To integrate widget, get your siteId from /admin/widgets');
+  </script>
+</body>
+</html>
