@@ -6,8 +6,26 @@ export default function Home() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Donation Widget Platform</h1>
-          <p className="mt-2 text-gray-600">Embeddable donation forms powered by Stripe</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Donation Widget Platform</h1>
+              <p className="mt-2 text-gray-600">Embeddable donation forms powered by Stripe</p>
+            </div>
+            <div className="flex gap-3">
+              <Link
+                href="/login"
+                className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/signup"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 

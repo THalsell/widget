@@ -2,8 +2,13 @@
 
 import { DonationButton } from '@/components/widget';
 import type { DonationCause } from '@/lib/types';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function DemoPage() {
+function DemoContent() {
+  const searchParams = useSearchParams();
+  const siteId = searchParams.get('siteId') || 'YOUR_SITE_ID_HERE';
+
   // Example causes for the widget
   const causes: DonationCause[] = [
     {
@@ -185,7 +190,7 @@ export default function DemoPage() {
 
       {/* Fixed Bottom-Right Button */}
       <DonationButton
-        siteId="demo-site"
+        siteId={siteId}
         organizationName="Demo Organization"
         causes={causes}
         buttonText="Donate"
@@ -194,5 +199,13 @@ export default function DemoPage() {
         onError={handleError}
       />
     </main>
+  );
+}
+
+export default function DemoPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DemoContent />
+    </Suspense>
   );
 }

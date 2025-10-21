@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import AdminNav from '@/components/admin/AdminNav';
 
 interface Stats {
   totalRaised: number;
@@ -125,24 +126,26 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-2">
-              Monitor donations, subscriptions, and donor activity
-            </p>
+    <div className="min-h-screen bg-gray-50">
+      <AdminNav />
+      <div className="py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-gray-600 mt-2">
+                Monitor donations, subscriptions, and donor activity
+              </p>
+            </div>
+            <Link
+              href="/admin/widgets"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Manage Widgets
+            </Link>
           </div>
-          <Link
-            href="/admin/widgets"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            Manage Widgets
-          </Link>
-        </div>
 
-        {/* Stats Grid */}
+          {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="Total Raised"
@@ -322,6 +325,7 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }
